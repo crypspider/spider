@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Optimus — Demo Stock Trading</title>
+<title>Tesla (Demo) Stock Trading</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif}
 body{background:#0a0a0a;color:#e8e8e8;min-height:100vh}
@@ -37,13 +37,13 @@ footer{padding:20px;text-align:center;color:#555;font-size:12px}
 <body>
 <div class="demo-banner">DEMO MODE — simulated money only, no real transactions</div>
 <header>
-  <h1><span>OPTIMUS</span> trading</h1>
+  <h1><span>TESLA</span> trading <small style="color:#b45309">demo</small></h1>
   <div class="balance">demo cash: <b id="cash"></b></div>
 </header>
 <main>
   <div class="grid">
     <div class="card">
-      <h2>OPTS · tracks TSLA live</h2>
+      <h2>TSLA · tracks TSLA live</h2>
       <div class="price" id="price">loading…</div>
       <div class="change" id="change"></div>
       <h2 style="margin-top:20px">trade</h2>
@@ -56,11 +56,11 @@ footer{padding:20px;text-align:center;color:#555;font-size:12px}
       <h2>portfolio</h2>
       <div class="portfolio-value" id="pfv">$0.00</div>
       <table id="holdings"><tbody></tbody></table>
-      <p class="empty" id="empty">no holdings yet. buy some OPTS.</p>
+      <p class="empty" id="empty">no holdings yet. buy some TSLA.</p>
     </div>
   </div>
 </main>
-<footer>Optimus is a demo. Prices mirror real TSLA quotes for realism. Nothing here involves real money, securities or brokers.</footer>
+<footer>Tesla demo is a paper-trading simulator. Not affiliated with Tesla Inc.. Prices mirror real TSLA quotes for realism. Nothing here involves real money, securities or brokers.</footer>
 <div id="toast"></div>
 <script>
 let cash=10000, holdings={}, price=null, prev=null;
@@ -69,7 +69,7 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.sty
 function render(){
   document.getElementById('cash').textContent=fmt(cash);
   let pfv=Object.entries(holdings).reduce((s,[,h])=>s+h.qty*price,0);
-  document.getElementById('pfv').textContent=fmt(pfv+cash)+' total ('+fmt(pfv)+' in OPTS)';
+  document.getElementById('pfv').textContent=fmt(pfv+cash)+' total ('+fmt(pfv)+' in TSLA)';
   const tb=document.querySelector('#holdings tbody');tb.innerHTML='';
   const rows=Object.entries(holdings);
   document.getElementById('empty').style.display=rows.length?'none':'block';
@@ -103,16 +103,16 @@ function trade(sell){
   const q=parseInt(document.getElementById('qty').value)||0;
   if(q<1){toast('enter a quantity');return}
   if(sell){
-    if((holdings.OPTS?.qty||0)<q){toast('not enough OPTS');return}
-    holdings.OPTS.qty-=q; cash+=q*price;
-    toast('sold '+q+' OPTS for '+fmt(q*price));
-    if(holdings.OPTS.qty===0)delete holdings.OPTS;
+    if((holdings.TSLA?.qty||0)<q){toast('not enough TSLA');return}
+    holdings.TSLA.qty-=q; cash+=q*price;
+    toast('sold '+q+' TSLA for '+fmt(q*price));
+    if(holdings.TSLA.qty===0)delete holdings.TSLA;
   }else{
     if(q*price>cash){toast('not enough demo cash');return}
     cash-=q*price;
-    holdings.OPTS=holdings.OPTS||{qty:0,cost:0};
-    holdings.OPTS.qty+=q; holdings.OPTS.cost+=q*price;
-    toast('bought '+q+' OPTS for '+fmt(q*price));
+    holdings.TSLA=holdings.TSLA||{qty:0,cost:0};
+    holdings.TSLA.qty+=q; holdings.TSLA.cost+=q*price;
+    toast('bought '+q+' TSLA for '+fmt(q*price));
   }
   render();
 }
