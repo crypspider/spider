@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimus — Demo Stock Trading</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif}
+body{background:#0a0a0a;color:#e8e8e8;min-height:100vh}
+.demo-banner{background:#b45309;color:#fff;text-align:center;padding:8px;font-size:13px;font-weight:600;letter-spacing:.5px}
+header{padding:20px 24px;border-bottom:1px solid #1f1f1f;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:20px}
+header h1 span{color:#e82127}
+.balance{font-size:14px;color:#aaa}
+.balance b{color:#4ade80;font-size:18px}
+main{max-width:900px;margin:0 auto;padding:24px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.card{background:#141414;border:1px solid #1f1f1f;border-radius:12px;padding:20px}
+.card h2{font-size:15px;color:#aaa;margin-bottom:14px;text-transform:uppercase;letter-spacing:1px}
+.price{font-size:36px;font-weight:700}
+.change{font-size:14px;margin-top:4px}
+.up{color:#4ade80}.down{color:#f87171}
+input,button{font-size:15px;border-radius:8px}
+input{width:100%;padding:10px 12px;background:#0a0a0a;border:1px solid #333;color:#fff;margin:6px 0 12px}
+button{width:100%;padding:12px;background:#e82127;color:#fff;border:none;font-weight:600;cursor:pointer}
+button:active{transform:scale(.98)}
+.sell{background:#333;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:8px 4px;text-align:left;border-bottom:1px solid #1f1f1f}
+.portfolio-value{font-size:28px;font-weight:700;margin-bottom:10px}
+.empty{color:#666;font-size:14px}
+footer{padding:20px;text-align:center;color:#555;font-size:12px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f1f1f;border:1px solid #333;padding:10px 20px;border-radius:8px;display:none}
+</style>
+</head>
+<body>
+<div class="demo-banner">DEMO MODE — simulated money only, no real transactions</div>
+<header>
+  <h1><span>OPTIMUS</span> trading</h1>
+  <div class="balance">demo cash: <b id="cash"></b></div>
+</header>
+<main>
+  <div class="grid">
+    <div class="card">
+      <h2>OPTS · tracks TSLA live</h2>
+      <div class="price" id="price">loading…</div>
+      <div class="change" id="change"></div>
+      <h2 style="margin-top:20px">trade</h2>
+      <label>quantity</label>
+      <input type="number" id="qty" min="1" value="1">
+      <button id="buyBtn">Buy (demo)</button>
+      <button class="sell" id="sellBtn">Sell (demo)</button>
+    </div>
+    <div class="card">
+      <h2>portfolio</h2>
+      <div class="portfolio-value" id="pfv">$0.00</div>
+      <table id="holdings"><tbody></tbody></table>
+      <p class="empty" id="empty">no holdings yet. buy some OPTS.</p>
+    </div>
+  </div>
+</main>
+<footer>Optimus is a demo. Prices mirror real TSLA quotes for realism. Nothing here involves real money, securities or brokers.</footer>
+<div id="toast"></div>
+<script>
+let cash=10000, holdings={}, price=null, prev=null;
+const fmt=n=>n.toLocaleString('en-US',{style:'currency',currency:'USD'});
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2200)}
+function render(){
+  document.getElementById('cash').textContent=fmt(cash);
+  let pfv=Object.entries(holdings).reduce((s,[,h])=>s+h.qty*price,0);
+  document.getElementById('pfv').textContent=fmt(pfv+cash)+' total ('+fmt(pfv)+' in OPTS)';
+  const tb=document.querySelector('#holdings tbody');tb.innerHTML='';
+  const rows=Object.entries(holdings);
+  document.getElementById('empty').style.display=rows.length?'none':'block';
+  for(const [p,h] of rows){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${p}</td><td>${h.qty}</td><td>${fmt(h.qty*price)}</td><td class="${h.qty*price-h.cost>=0?'up':'down'}">${fmt(h.qty*price-h.cost)}</td>`;
+    tb.appendChild(tr);
+  }
+}
+async function tick(){
+  try{
+    const r=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/TSLA?interval=1d&range=1d');
+    const j=await r.json();
+    const meta=j.chart.result[0].meta;
+    price=meta.regularMarketPrice; prev=meta.chartPreviousClose;
+    document.getElementById('price').textContent=fmt(price);
+    const c=price-prev, pc=(c/prev*100);
+    const el=document.getElementById('change');
+    el.textContent=(c>=0?'+':'')+fmt(c)+' ('+pc.toFixed(2)+'%) today';
+    el.className='change '+(c>=0?'up':'down');
+  }catch(e){
+    price=price||420.00; prev=prev||price;
+    document.getElementById('price').textContent=fmt(price);
+    document.getElementById('change').textContent='live price unavailable, using last known';
+    document.getElementById('change').className='change';
+  }
+  render();
+}
+function trade(sell){
+  if(price==null){toast('price still loading');return}
+  const q=parseInt(document.getElementById('qty').value)||0;
+  if(q<1){toast('enter a quantity');return}
+  if(sell){
+    if((holdings.OPTS?.qty||0)<q){toast('not enough OPTS');return}
+    holdings.OPTS.qty-=q; cash+=q*price;
+    toast('sold '+q+' OPTS for '+fmt(q*price));
+    if(holdings.OPTS.qty===0)delete holdings.OPTS;
+  }else{
+    if(q*price>cash){toast('not enough demo cash');return}
+    cash-=q*price;
+    holdings.OPTS=holdings.OPTS||{qty:0,cost:0};
+    holdings.OPTS.qty+=q; holdings.OPTS.cost+=q*price;
+    toast('bought '+q+' OPTS for '+fmt(q*price));
+  }
+  render();
+}
+document.getElementById('buyBtn').onclick=()=>trade(false);
+document.getElementById('sellBtn').onclick=()=>trade(true);
+tick(); setInterval(tick,30000);
+</script>
+</body>
+</html>
